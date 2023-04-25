@@ -760,6 +760,20 @@ FEAT_END
     struct fb_info *fbs;
     size_t fbs_count;
 
+    fbs = NULL;
+    fbs_count = 0;
+#if defined(BIOS)
+    // Copied from common/drivers/vga_textmode.c
+    if (current_video_mode != 0x3) {
+        struct rm_regs r = {0};
+        r.eax = 0x0003;
+        rm_int(0x10, &r, &r);
+
+        current_video_mode = 0x3;
+    }
+#endif
+    goto skip_fb_init;
+
     term_notready();
 
     fb_init(&fbs, &fbs_count, req_width, req_height, req_bpp);
@@ -767,6 +781,7 @@ FEAT_END
         goto no_fb;
     }
 
+ skip_fb_init:
     for (size_t i = 0; i < fbs_count; i++) {
         memmap_alloc_range(fbs[i].framebuffer_addr,
                            (uint64_t)fbs[i].framebuffer_pitch * fbs[i].framebuffer_height,
